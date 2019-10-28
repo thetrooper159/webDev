@@ -1,6 +1,8 @@
 var express = require('express');
 var app = express();
 var formidable = require('formidable');
+var credentials = require("./credentials.js");
+
 // set up handlebars view engine
 var handlebars = require('express-handlebars').create({
  defaultLayout:'main',
@@ -17,7 +19,11 @@ app.set('view engine', 'handlebars');
 
 app.use(express.static(__dirname + '/public'));
 app.use(require('body-parser').urlencoded({extended:true}));
-
+app.use(require('express-session')({
+  resave:false,
+  saveUniitialized: false,
+  secret:credentials.cookieSecret,
+}));
 var textColors = ['red', 'green', 'yellow', 'white', 'black', 'purple'];
 
 
@@ -32,6 +38,10 @@ app.use(function(req, res, next){
  next();
 });
 
+app.use(function(req, res, next){
+  res.locals.name = req.session.name;
+  next();
+});
 app.get('/home', function(req, res) {
  res.render('home', {
    people: [
@@ -69,6 +79,7 @@ app.get('/tours/hood-river', function(req, res){
 app.get('/thank-you', function(req, res){
  res.render('thank-you', );
 });
+
 app.get('/tours/request-group-rate', function(req, res){
  res.render('tours/request-group-rate');
 });
@@ -82,8 +93,8 @@ app.post('/process', function(req, res){
         console.log('Form (from querystring): ' + req.query.form);
         console.log('CSRF token (from hidden form field): ' + req.body._csrf);
         console.log('Name (from visible form field): ' + req.body.name);
+        req.session.name = req.body.name;
         console.log('Email (from visible form field): ' + req.body.email);
-        console.log('Question (from visible form field): ' + req.body.question);
         res.redirect(303, '/thank-you');
     }
 });
